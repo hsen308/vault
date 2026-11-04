@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Vault — Personal Finance</title>
+  
+  <!-- Apple iOS PWA Meta Tags -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Vault">
+  <link rel="apple-touch-icon" href="icon-192.svg">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#000000">
+
+  <!-- Apple System Font is loaded natively via system-ui / -apple-system -->
+  <!-- Lucide Icons & Chart.js -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="ios-dark">
+
+  <!-- Apple Ambient Translucent Backdrop -->
+  <div class="ios-background"></div>
+
+  <div class="ios-app-container">
+
+    <!-- iOS Translucent Header -->
+    <header class="ios-nav-bar">
+      <div class="nav-content">
+        <div class="nav-brand">
+          <span class="ios-app-title">Vault</span>
+        </div>
+
+        <div class="nav-actions">
+          <!-- Notification Reminder Indicator / Trigger -->
+          <button id="btnOpenReminderSettings" class="ios-icon-button" title="Daily Reminder Settings">
+            <i data-lucide="bell" id="bellIcon"></i>
+          </button>
+
+          <!-- Currency Selector -->
+          <div class="ios-select-wrapper">
+            <select id="currencySelect" class="ios-minimal-select" title="Change Currency">
+              <option value="USD">USD ($)</option>
+              <option value="LBP">LBP (L.L)</option>
+              <option value="EUR">EUR (€)</option>
+              <option value="GBP">GBP (£)</option>
+              <option value="AED">AED (AED)</option>
+            </select>
+          </div>
+
+          <!-- Settings & Data Storage -->
+          <button id="btnOpenSettingsModal" class="ios-icon-button" title="Settings & Data Storage">
+            <i data-lucide="settings"></i>
+          </button>
+
+          <!-- Primary Add Button (Desktop) -->
+          <button id="btnDesktopAdd" class="ios-primary-btn">
+            <i data-lucide="plus"></i>
+            <span>Log</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Notification Permission / Reminder Banner (if not yet enabled) -->
+    <div class="ios-reminder-banner" id="reminderBanner" style="display: none;">
+      <div class="banner-inner">
+        <div class="banner-icon">
+          <i data-lucide="bell-ring"></i>
+        </div>
+        <div class="banner-text">
+          <strong>Daily Spending Reminder</strong>
+          <span>Get a quiet evening nudge to log your purchases.</span>
+        </div>
+        <div class="banner-buttons">
+          <button id="btnEnableNotifications" class="ios-action-pill">Turn On</button>
+          <button id="btnDismissBanner" class="ios-ghost-pill">&times;</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Views Controller -->
+    <main class="ios-main-content">
+
+      <!-- ============================================================ -->
+      <!-- VIEW 1: DASHBOARD -->
+      <!-- ============================================================ -->
+      <section class="ios-view active" id="view-dashboard">
+        
+        <!-- Hero Balance Summary (Apple Wallet Style) -->
+        <div class="ios-wallet-card">
+          <div class="wallet-card-header">
+            <span class="ios-caption">TOTAL AVAILABLE FUNDS</span>
+            <button class="ios-link-button" id="btnQuickSetBalance">
+              Set Exact Funds
+            </button>
+          </div>
+          <div class="wallet-amount-wrap">
+            <h1 class="ios-display-number" id="heroTotalFunds">$0.00</h1>
+          </div>
+          <div class="wallet-card-footer">
+            <div class="wallet-stat">
+              <span class="ios-micro-label">Spent Today</span>
+              <span class="ios-mono-stat text-red" id="heroSpentToday">$0.00</span>
+            </div>
+            <div class="wallet-divider"></div>
+            <div class="wallet-stat">
+              <span class="ios-micro-label">Spent This Month</span>
+              <span class="ios-mono-stat" id="heroSpentMonth">$0.00</span>
+            </div>
+            <div class="wallet-divider"></div>
+            <div class="wallet-stat">
+              <span class="ios-micro-label">Inflows</span>
+              <span class="ios-mono-stat text-green" id="heroIncomeMonth">$0.00</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Safe Daily Spend Indicator -->
+        <div class="ios-card ios-budget-card">
+          <div class="budget-card-top">
+            <div class="budget-meta">
+              <span class="card-title">Daily Spending Target</span>
+              <span class="card-subtitle" id="dailyBudgetText">Target: $50.00/day</span>
+            </div>
+            <span class="budget-percentage" id="dailyBudgetPercentage">0%</span>
+          </div>
+          <div class="ios-progress-track">
+            <div class="ios-progress-fill" id="dailyBudgetFill" style="width: 0%;"></div>
+          </div>
+          <div class="budget-card-bottom">
+            <span class="ios-caption" id="dailyRemainingText">$50.00 remaining today</span>
+            <button class="ios-mini-action" id="btnAdjustDailyTarget">Edit Target</button>
+          </div>
+        </div>
+
+        <!-- Spending Velocity & Trend Chart -->
+        <div class="ios-card">
+          <div class="ios-card-header">
+            <div>
+              <h3 class="card-title">Daily Spending Trend</h3>
+              <p class="card-subtitle">Daily expense activity this month</p>
+            </div>
+            <div class="ios-segmented-control-mini">
+              <button class="seg-btn active" data-chart="month">Month</button>
+              <button class="seg-btn" data-chart="week">14 Days</button>
+            </div>
+          </div>
+          <div class="ios-chart-box">
+            <canvas id="dailySpendingChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Categories & Distribution -->
+        <div class="ios-card">
+          <div class="ios-card-header">
+            <div>
+              <h3 class="card-title">Spending by Category</h3>
+              <p class="card-subtitle">Breakdown of purchases</p>
+            </div>
+          </div>
+          <div class="category-summary-wrap">
+            <div class="donut-wrap">
+              <canvas id="categoryDonutChart"></canvas>
+            </div>
+            <div class="category-items-list" id="categoryBarsList">
+              <!-- Rendered via JS -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Today's Activity Stream -->
+        <div class="ios-grouped-section">
+          <div class="grouped-header-row">
+            <span class="grouped-title">TODAY'S PURCHASES</span>
+            <button class="ios-link-button" id="btnViewAllDaily">See All</button>
+          </div>
+          <div class="ios-grouped-list" id="todayActivityList">
+            <!-- Empty state or items injected via JS -->
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ============================================================ -->
+      <!-- VIEW 2: DAILY LOG -->
+      <!-- ============================================================ -->
+      <section class="ios-view" id="view-daily">
+        <div class="view-header">
+          <h2 class="view-title">Daily Spending</h2>
+          <span class="view-caption">Grouped day by day</span>
+        </div>
+
+        <!-- Clean iOS Search Field -->
+        <div class="ios-search-bar">
+          <i data-lucide="search"></i>
+          <input type="text" id="dailySearchInput" placeholder="Search coffee, groceries, notes..." class="ios-search-input">
+          <button id="btnClearDailySearch" class="ios-clear-btn" style="display: none;">&times;</button>
+        </div>
+
+        <!-- Category & Type Segmented Controller -->
+        <div class="ios-segmented-control">
+          <button class="seg-btn active" data-type-filter="all">All</button>
+          <button class="seg-btn" data-type-filter="expense">Expenses</button>
+          <button class="seg-btn" data-type-filter="income">Inflows</button>
+        </div>
+
+        <!-- Grouped Daily Containers -->
+        <div class="daily-grouped-records" id="dailyGroupedContainer">
+          <!-- Injected via JS -->
+        </div>
+
+        <!-- Empty State -->
+        <div class="ios-empty-state" id="dailyEmptyState" style="display: none;">
+          <div class="empty-icon-circle">
+            <i data-lucide="receipt"></i>
+          </div>
+          <h3>No Spendings Recorded</h3>
+          <p>Tap the + button to log your first expense.</p>
+        </div>
+      </section>
+
+      <!-- ============================================================ -->
+      <!-- VIEW 3: FUNDS & BALANCE -->
+      <!-- ============================================================ -->
+      <section class="ios-view" id="view-funds">
+        <div class="view-header">
+          <h2 class="view-title">Funds & Balance</h2>
+          <span class="view-caption">How much money you have right now</span>
+        </div>
+
+        <div class="ios-wallet-hero">
+          <span class="ios-caption">CURRENT TOTAL FUNDS</span>
+          <div class="wallet-big-value">
+            <span class="currency-prefix" id="fundsCurrencyPrefix">$</span>
+            <span class="number-display" id="fundsExactTotal">0.00</span>
+          </div>
+          <p class="wallet-sync-status" id="fundsLastUpdated">Baseline: $0.00</p>
+        </div>
+
+        <!-- Quick Balance Calibration (Apple Form Style) -->
+        <div class="ios-grouped-section">
+          <span class="grouped-title">SET EXACT MONEY</span>
+          <div class="ios-form-card">
+            <div class="form-row-apple">
+              <label for="inputExactMoney">How much do you have?</label>
+              <div class="apple-input-wrap">
+                <span class="input-curr" id="currInputPrefix">$</span>
+                <input type="number" id="inputExactMoney" class="apple-text-input" placeholder="0.00" step="0.01">
+              </div>
+            </div>
+            <div class="form-row-apple">
+              <label for="inputCalibrateNote">Note (Optional)</label>
+              <input type="text" id="inputCalibrateNote" class="apple-text-input" placeholder="e.g., Wallet count + bank balance">
+            </div>
+            <div class="form-action-row">
+              <button id="btnSubmitExactMoney" class="ios-primary-block-btn">
+                Update Total Funds
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Add Income / Cash Inflow Section -->
+        <div class="ios-grouped-section">
+          <span class="grouped-title">ADD INFLOW / INCOME</span>
+          <form id="inflowForm" class="ios-form-card">
+            <div class="form-row-apple">
+              <label for="inflowAmount">Amount Received</label>
+              <div class="apple-input-wrap">
+                <span class="input-curr" id="currInflowPrefix">$</span>
+                <input type="number" id="inflowAmount" class="apple-text-input" placeholder="0.00" step="0.01" required>
+              </div>
+            </div>
+            <div class="form-row-apple">
+              <label for="inflowSource">Source / Client</label>
+              <input type="text" id="inflowSource" class="apple-text-input" placeholder="e.g. Freelance project, ATM deposit" required>
+            </div>
+            <div class="form-row-apple">
+              <label for="inflowAccount">Account</label>
+              <select id="inflowAccount" class="apple-select">
+                <option value="Cash">Cash</option>
+                <option value="Bank">Bank Account</option>
+                <option value="Savings">Savings</option>
+                <option value="Wallet">Digital Wallet</option>
+              </select>
+            </div>
+            <div class="form-action-row">
+              <button type="submit" class="ios-green-block-btn">
+                + Add to Balance
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Inflow & Adjustment History -->
+        <div class="ios-grouped-section">
+          <span class="grouped-title">BALANCE ADJUSTMENTS LOG</span>
+          <div class="ios-grouped-list" id="fundsAdjustmentList">
+            <!-- Injected via JS -->
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================ -->
+      <!-- VIEW 4: ANALYTICS & STATS -->
+      <!-- ============================================================ -->
+      <section class="ios-view" id="view-analytics">
+        <div class="view-header">
+          <h2 class="view-title">Analytics</h2>
+          <span class="view-caption">Durable data patterns for long-term tracking</span>
+        </div>
+
+        <!-- Weekday Pattern Chart -->
+        <div class="ios-card">
+          <div class="ios-card-header">
+            <div>
+              <h3 class="card-title">Day of Week Pattern</h3>
+              <p class="card-subtitle">Where you spend the most</p>
+            </div>
+          </div>
+          <div class="ios-chart-box">
+            <canvas id="dayOfWeekChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Payment Method Distribution -->
+        <div class="ios-card">
+          <div class="ios-card-header">
+            <div>
+              <h3 class="card-title">Payment Method</h3>
+              <p class="card-subtitle">Cash vs Card vs Bank</p>
+            </div>
+          </div>
+          <div class="ios-chart-box">
+            <canvas id="paymentMethodChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Full Categories Ledger -->
+        <div class="ios-grouped-section">
+          <span class="grouped-title">ALL-TIME CATEGORY TOTALS</span>
+          <div class="ios-grouped-list" id="analyticsCategoryList">
+            <!-- Injected via JS -->
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- iOS Tab Bar (Bottom) -->
+    <nav class="ios-tab-bar">
+      <button class="tab-item active" data-tab="dashboard">
+        <i data-lucide="layout-grid"></i>
+        <span>Overview</span>
+      </button>
+      <button class="tab-item" data-tab="daily">
+        <i data-lucide="calendar"></i>
+        <span>Daily</span>
+      </button>
+      <button class="tab-item center-add-tab" id="btnMobileAdd" title="Log Spend">
+        <div class="center-add-circle">
+          <i data-lucide="plus"></i>
+        </div>
+      </button>
+      <button class="tab-item" data-tab="funds">
+        <i data-lucide="wallet"></i>
+        <span>Funds</span>
+      </button>
+      <button class="tab-item" data-tab="analytics">
+        <i data-lucide="bar-chart-2"></i>
+        <span>Analytics</span>
+      </button>
+    </nav>
+
+    <!-- Footer Credit per AGENTS.md rule -->
+    <footer class="ios-footer">
+      <a href="https://www.novustudios.com" target="_blank" rel="noopener">Website by Novu Studios</a>
+    </footer>
+
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- MODAL / APPLE BOTTOM SHEET: RECORD TRANSACTION -->
+  <!-- ============================================================ -->
+  <div class="ios-modal-backdrop" id="txSheetModal" aria-hidden="true">
+    <div class="ios-bottom-sheet" id="sheetContainer">
+      <!-- Drag Handle -->
+      <div class="sheet-drag-handle-zone">
+        <div class="sheet-drag-pill"></div>
+      </div>
+
+      <div class="sheet-header">
+        <div class="sheet-segmented-toggle">
+          <button type="button" class="sheet-seg-btn active" id="btnSheetExpense">Expense</button>
+          <button type="button" class="sheet-seg-btn" id="btnSheetIncome">Income</button>
+        </div>
+        <button type="button" class="sheet-close-btn" id="btnCloseSheet">&times;</button>
+      </div>
+
+      <form id="sheetTxForm" class="sheet-body">
+        <input type="hidden" id="sheetTxType" value="expense">
+
+        <!-- Tactile Big Number Amount Input -->
+        <div class="sheet-amount-container">
+          <span class="sheet-currency-symbol" id="sheetCurrSymbol">$</span>
+          <input type="number" id="sheetAmount" class="sheet-amount-input" placeholder="0" step="0.01" min="0.01" required autofocus inputmode="decimal">
+        </div>
+
+        <!-- Clean Categories Horizontal Scroll / Grid -->
+        <div class="sheet-section" id="sheetCategorySection">
+          <span class="sheet-section-label">Category</span>
+          <div class="apple-category-chips" id="sheetCategoryPicker">
+            <!-- Injected via JS -->
+          </div>
+          <input type="hidden" id="sheetSelectedCategory" value="Food & Dining">
+        </div>
+
+        <!-- Note Input with Quick Tag Pills -->
+        <div class="sheet-section">
+          <span class="sheet-section-label">Note / Description</span>
+          <input type="text" id="sheetNote" class="apple-sheet-input" placeholder="What was this for?" required>
+          
+          <div class="apple-quick-tags" id="sheetQuickTags">
+            <button type="button" class="apple-tag" data-tag="Coffee ☕">Coffee ☕</button>
+            <button type="button" class="apple-tag" data-tag="Lunch 🍔">Lunch 🍔</button>
+            <button type="button" class="apple-tag" data-tag="Groceries 🛒">Groceries 🛒</button>
+            <button type="button" class="apple-tag" data-tag="Fuel ⛽">Fuel ⛽</button>
+            <button type="button" class="apple-tag" data-tag="Dinner 🍕">Dinner 🍕</button>
+            <button type="button" class="apple-tag" data-tag="Uber 🚕">Uber 🚕</button>
+            <button type="button" class="apple-tag" data-tag="Subscription 💳">Subscription 💳</button>
+          </div>
+        </div>
+
+        <!-- Date & Payment Method -->
+        <div class="sheet-row-2">
+          <div class="sheet-col">
+            <span class="sheet-section-label">Date</span>
+            <input type="date" id="sheetDate" class="apple-sheet-input">
+          </div>
+          <div class="sheet-col">
+            <span class="sheet-section-label">Payment</span>
+            <select id="sheetPaymentMethod" class="apple-select">
+              <option value="Cash">Cash</option>
+              <option value="Card">Card</option>
+              <option value="Bank Transfer">Bank Transfer</option>
+              <option value="Digital Wallet">Digital Wallet</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Save Button -->
+        <div class="sheet-footer">
+          <button type="submit" class="ios-primary-block-btn" id="btnSaveTransaction">
+            Save
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- MODAL: REMINDER & NOTIFICATION SETTINGS -->
+  <!-- ============================================================ -->
+  <div class="ios-modal-backdrop" id="reminderModal" aria-hidden="true">
+    <div class="ios-dialog-card">
+      <div class="dialog-header">
+        <h3 class="dialog-title">Daily Reminder</h3>
+        <button class="sheet-close-btn" id="btnCloseReminderModal">&times;</button>
+      </div>
+
+      <div class="dialog-body">
+        <p class="dialog-description">
+          Vault will send you a gentle notification to remind you to log your daily expenses.
+        </p>
+
+        <div class="dialog-row">
+          <span>Enable Daily Reminder</span>
+          <label class="ios-switch">
+            <input type="checkbox" id="toggleReminder">
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="dialog-row" id="reminderTimeRow">
+          <span>Reminder Time</span>
+          <input type="time" id="reminderTimeInput" class="ios-time-picker" value="20:30">
+        </div>
+
+        <div class="dialog-actions">
+          <button id="btnSendTestNotification" class="ios-secondary-btn">
+            Test Notification
+          </button>
+          <button id="btnSaveReminderSettings" class="ios-primary-btn">
+            Save Settings
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- MODAL: DATA & STORAGE SETTINGS (INDEXEDDB & EXPORT) -->
+  <!-- ============================================================ -->
+  <div class="ios-modal-backdrop" id="settingsModal" aria-hidden="true">
+    <div class="ios-dialog-card">
+      <div class="dialog-header">
+        <h3 class="dialog-title">Storage & Settings</h3>
+        <button class="sheet-close-btn" id="btnCloseSettingsModal">&times;</button>
+      </div>
+
+      <div class="dialog-body">
+        <div class="storage-info-box">
+          <div class="storage-icon"><i data-lucide="database"></i></div>
+          <div>
+            <strong>IndexedDB Persistent Storage</strong>
+            <p id="storageStatusText">Status: Durable & Persistent</p>
+          </div>
+        </div>
+
+        <div class="dialog-setting-group">
+          <span class="group-label">DAILY TARGET</span>
+          <div class="dialog-row">
+            <span>Daily Budget Target</span>
+            <div class="apple-input-wrap" style="width: 100px;">
+              <span class="input-curr" id="currTargetPrefix">$</span>
+              <input type="number" id="settingDailyTarget" class="apple-text-input" value="50" min="1">
+            </div>
+          </div>
+        </div>
+
+        <div class="dialog-setting-group">
+          <span class="group-label">DATA BACKUP & EXPORT</span>
+          <div class="dialog-btn-stack">
+            <button id="btnExportJSON" class="ios-list-action-btn">
+              <i data-lucide="download"></i>
+              <span>Export Full Analytics (JSON)</span>
+            </button>
+            <button id="btnExportCSV" class="ios-list-action-btn">
+              <i data-lucide="file-spreadsheet"></i>
+              <span>Export Transactions (CSV)</span>
+            </button>
+            <label class="ios-list-action-btn">
+              <i data-lucide="upload"></i>
+              <span>Restore Backup</span>
+              <input type="file" id="importFileInput" accept=".json" style="display: none;">
+            </label>
+            <button id="btnResetAll" class="ios-list-action-btn text-red">
+              <i data-lucide="trash-2"></i>
+              <span>Wipe Data & Reset to Zeros</span>
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Register Service Worker & Load Database/App Logic -->
+  <script src="app.js"></script>
+</body>
+</html>

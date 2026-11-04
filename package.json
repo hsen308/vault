@@ -1,0 +1,13 @@
+{
+  "name": "vault-money-tracker",
+  "version": "1.0.0",
+  "private": true,
+  "description": "High-precision personal money management and daily spending tracker",
+  "scripts": {
+    "dev": "vite",
+    "serve": "npx serve ."
+  },
+  "devDependencies": {
+    "vite": "^5.4.0"
+  }
+}

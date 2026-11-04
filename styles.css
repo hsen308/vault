@@ -1,0 +1,1281 @@
+/* ==========================================================================
+   VAULT — Apple Design System
+   Human Interface Guidelines: Translucent Materials, Spatial Restraint,
+   SF Typography, Fluid Springs & Responsive Mobile Touch
+   ========================================================================== */
+
+:root {
+  /* Apple System Dark Palette */
+  --ios-black: #000000;
+  --ios-bg-grouped: #121214;
+  --ios-bg-card: rgba(28, 28, 30, 0.75);
+  --ios-bg-card-hover: rgba(38, 38, 40, 0.85);
+  --ios-bg-surface-elevated: #2c2c2e;
+  --ios-bg-fill: rgba(120, 120, 128, 0.24);
+
+  /* Materials & Borders */
+  --ios-glass-border: 0.5px solid rgba(255, 255, 255, 0.14);
+  --ios-divider: 0.5px solid rgba(255, 255, 255, 0.08);
+  --ios-blur-material: blur(25px) saturate(180%);
+
+  /* Apple System Accents */
+  --ios-blue: #0a84ff;
+  --ios-blue-dim: rgba(10, 132, 255, 0.16);
+  --ios-green: #30d158;
+  --ios-green-dim: rgba(48, 209, 88, 0.16);
+  --ios-red: #ff453a;
+  --ios-red-dim: rgba(255, 69, 58, 0.16);
+  --ios-orange: #ff9f0a;
+  --ios-orange-dim: rgba(255, 159, 10, 0.16);
+  --ios-indigo: #5e5ce6;
+  --ios-teal: #64d2ff;
+
+  /* Typography Colors */
+  --ios-text-primary: #ffffff;
+  --ios-text-secondary: #8e8e93;
+  --ios-text-tertiary: #636366;
+
+  /* Fonts */
+  --font-sf: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", system-ui, sans-serif;
+  --font-mono: "SF Mono", Menlo, Monaco, Consolas, monospace;
+
+  /* Radii */
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-sheet: 26px;
+  --radius-full: 9999px;
+
+  /* Safe Area Insets for iOS PWA */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Reset & Box Sizing */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+  background-color: var(--ios-black);
+  color: var(--ios-text-primary);
+  font-family: var(--font-sf);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.45;
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+/* Tabular figures for monetary stability */
+.ios-display-number, .ios-mono-stat, .number-display, .budget-percentage, .currency-prefix {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Apple Touch Feedback: Instant on press, scale down slightly */
+button, .tab-item, .ios-action-pill, .apple-tag, .ios-list-action-btn, .category-chip {
+  cursor: pointer;
+  user-select: none;
+  transition: transform 120ms ease-out, opacity 120ms ease-out;
+}
+button:active, .tab-item:active, .ios-action-pill:active, .apple-tag:active {
+  transform: scale(0.97);
+  opacity: 0.85;
+}
+
+/* Subtle Quiet Ambient Backdrop */
+.ios-background {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: radial-gradient(circle at 50% -10%, #1a1a24 0%, #000000 65%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Main App Shell Layout */
+.ios-app-container {
+  position: relative;
+  z-index: 1;
+  max-width: 680px; /* Focused, calm mobile/tablet container width */
+  margin: 0 auto;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: calc(85px + var(--safe-bottom));
+}
+
+/* ==========================================================================
+   HEADER: APPLE TRANSLUCENT NAVIGATION BAR
+   ========================================================================== */
+.ios-nav-bar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: var(--ios-blur-material);
+  -webkit-backdrop-filter: var(--ios-blur-material);
+  border-bottom: var(--ios-divider);
+  padding: calc(0.75rem + var(--safe-top)) 1.25rem 0.75rem 1.25rem;
+}
+.nav-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.nav-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.ios-app-title {
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: #ffffff;
+}
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.ios-icon-button {
+  background: rgba(255, 255, 255, 0.08);
+  border: var(--ios-glass-border);
+  color: #ffffff;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ios-icon-button svg {
+  width: 17px;
+  height: 17px;
+}
+.ios-icon-button.active-bell {
+  color: var(--ios-orange);
+  background: var(--ios-orange-dim);
+}
+
+.ios-minimal-select {
+  background: rgba(255, 255, 255, 0.08);
+  border: var(--ios-glass-border);
+  color: #ffffff;
+  padding: 0.4rem 0.75rem;
+  border-radius: var(--radius-full);
+  font-size: 0.8rem;
+  font-weight: 600;
+  outline: none;
+}
+
+.ios-primary-btn {
+  background: var(--ios-blue);
+  color: #ffffff;
+  border: none;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.45rem 1rem;
+  border-radius: var(--radius-full);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.ios-primary-btn svg {
+  width: 15px;
+  height: 15px;
+}
+
+/* ==========================================================================
+   DAILY REMINDER BANNER (Apple Notification Banner)
+   ========================================================================== */
+.ios-reminder-banner {
+  margin: 0.85rem 1.25rem 0.25rem 1.25rem;
+  background: rgba(28, 28, 30, 0.85);
+  backdrop-filter: var(--ios-blur-material);
+  -webkit-backdrop-filter: var(--ios-blur-material);
+  border: var(--ios-glass-border);
+  border-radius: var(--radius-md);
+  padding: 0.85rem 1rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  animation: slideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.banner-inner {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+.banner-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-sm);
+  background: var(--ios-orange-dim);
+  color: var(--ios-orange);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.banner-icon svg {
+  width: 18px;
+  height: 18px;
+}
+.banner-text {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+.banner-text strong {
+  font-size: 0.85rem;
+  color: #ffffff;
+}
+.banner-text span {
+  font-size: 0.75rem;
+  color: var(--ios-text-secondary);
+}
+.banner-buttons {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.ios-action-pill {
+  background: var(--ios-blue);
+  color: #ffffff;
+  border: none;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.35rem 0.85rem;
+  border-radius: var(--radius-full);
+}
+.ios-ghost-pill {
+  background: transparent;
+  border: none;
+  color: var(--ios-text-secondary);
+  font-size: 1.2rem;
+  padding: 0.2rem;
+  cursor: pointer;
+}
+
+/* ==========================================================================
+   VIEWS CONTROLLER & SPATIAL HIERARCHY
+   ========================================================================== */
+.ios-main-content {
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.ios-view {
+  display: none;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+.ios-view.active {
+  display: flex;
+  animation: viewFade 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes viewFade {
+  from { opacity: 0; transform: scale(0.99); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.view-header {
+  margin-bottom: 0.25rem;
+}
+.view-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: #ffffff;
+  line-height: 1.1;
+}
+.view-caption {
+  font-size: 0.82rem;
+  color: var(--ios-text-secondary);
+}
+
+/* ==========================================================================
+   APPLE WALLET CARD (Hero Financial Summary)
+   ========================================================================== */
+.ios-wallet-card {
+  background: linear-gradient(180deg, rgba(38, 38, 42, 0.75) 0%, rgba(22, 22, 24, 0.85) 100%);
+  backdrop-filter: var(--ios-blur-material);
+  -webkit-backdrop-filter: var(--ios-blur-material);
+  border: var(--ios-glass-border);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem 1.35rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  position: relative;
+  overflow: hidden;
+}
+
+.wallet-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+.ios-caption {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: var(--ios-text-secondary);
+  text-transform: uppercase;
+}
+.ios-link-button {
+  background: transparent;
+  border: none;
+  color: var(--ios-blue);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.wallet-amount-wrap {
+  margin: 0.35rem 0 1.25rem 0;
+}
+.ios-display-number {
+  font-size: 2.75rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+  color: #ffffff;
+}
+
+.wallet-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 1rem;
+  border-top: var(--ios-divider);
+}
+.wallet-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+.ios-micro-label {
+  font-size: 0.68rem;
+  color: var(--ios-text-secondary);
+}
+.ios-mono-stat {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+.wallet-divider {
+  width: 0.5px;
+  height: 24px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.text-red { color: var(--ios-red) !important; }
+.text-green { color: var(--ios-green) !important; }
+
+/* ==========================================================================
+   CARDS & CONTAINERS (iOS Grouped Style)
+   ========================================================================== */
+.ios-card {
+  background: var(--ios-bg-card);
+  backdrop-filter: var(--ios-blur-material);
+  -webkit-backdrop-filter: var(--ios-blur-material);
+  border: var(--ios-glass-border);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+}
+
+.ios-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+.card-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: -0.01em;
+}
+.card-subtitle {
+  font-size: 0.75rem;
+  color: var(--ios-text-secondary);
+}
+
+/* Daily Budget Meter */
+.ios-budget-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.budget-card-top, .budget-card-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.budget-percentage {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+.ios-progress-track {
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+.ios-progress-fill {
+  height: 100%;
+  background: var(--ios-blue);
+  border-radius: var(--radius-full);
+  transition: width 0.3s ease;
+}
+.ios-mini-action {
+  background: transparent;
+  border: none;
+  color: var(--ios-blue);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+/* Segmented Controls (Apple iOS Style) */
+.ios-segmented-control-mini {
+  display: flex;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 0.2rem;
+  border-radius: var(--radius-sm);
+}
+.ios-segmented-control {
+  display: flex;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 0.25rem;
+  border-radius: var(--radius-md);
+  margin-bottom: 0.5rem;
+}
+.seg-btn {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--ios-text-secondary);
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.35rem 0.65rem;
+  border-radius: var(--radius-sm);
+  transition: background 150ms ease, color 150ms ease;
+}
+.seg-btn.active {
+  background: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+.ios-chart-box {
+  width: 100%;
+  height: 200px;
+  position: relative;
+}
+
+/* Category Summary Layout */
+.category-summary-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.donut-wrap {
+  position: relative;
+  width: 100%;
+  height: 150px;
+}
+.category-items-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.cat-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.4rem 0;
+  font-size: 0.82rem;
+}
+.cat-row-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.cat-color-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+/* ==========================================================================
+   GROUPED LIST ROWS (Apple Inset Grouped Table View)
+   ========================================================================== */
+.ios-grouped-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.grouped-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 0.25rem;
+}
+.grouped-title {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: var(--ios-text-secondary);
+  text-transform: uppercase;
+}
+
+.ios-grouped-list {
+  background: var(--ios-bg-card);
+  backdrop-filter: var(--ios-blur-material);
+  -webkit-backdrop-filter: var(--ios-blur-material);
+  border: var(--ios-glass-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.ios-list-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.85rem 1rem;
+  border-bottom: var(--ios-divider);
+  transition: background 120ms ease;
+}
+.ios-list-row:last-child {
+  border-bottom: none;
+}
+.ios-list-row:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.row-left {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+.row-icon-circle {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.15rem;
+  background: rgba(255, 255, 255, 0.05);
+  flex-shrink: 0;
+}
+.row-text {
+  display: flex;
+  flex-direction: column;
+}
+.row-title {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #ffffff;
+}
+.row-meta {
+  font-size: 0.72rem;
+  color: var(--ios-text-secondary);
+}
+
+.row-right {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+.row-amount {
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+.row-amount.expense { color: var(--ios-red); }
+.row-amount.income { color: var(--ios-green); }
+
+.row-delete-btn {
+  background: transparent;
+  border: none;
+  color: var(--ios-text-tertiary);
+  padding: 0.3rem;
+  display: flex;
+  align-items: center;
+  border-radius: 4px;
+}
+.row-delete-btn:hover {
+  color: var(--ios-red);
+}
+.row-delete-btn svg {
+  width: 15px;
+  height: 15px;
+}
+
+/* ==========================================================================
+   SEARCH BAR
+   ========================================================================== */
+.ios-search-bar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+.ios-search-bar svg {
+  position: absolute;
+  left: 0.85rem;
+  width: 16px;
+  height: 16px;
+  color: var(--ios-text-secondary);
+  pointer-events: none;
+}
+.ios-search-input {
+  width: 100%;
+  background: rgba(118, 118, 128, 0.24);
+  border: none;
+  color: #ffffff;
+  padding: 0.55rem 2.2rem 0.55rem 2.4rem;
+  border-radius: var(--radius-md);
+  font-size: 0.88rem;
+  outline: none;
+}
+.ios-search-input::placeholder {
+  color: var(--ios-text-secondary);
+}
+.ios-clear-btn {
+  position: absolute;
+  right: 0.85rem;
+  background: transparent;
+  border: none;
+  color: var(--ios-text-secondary);
+  font-size: 1.1rem;
+}
+
+/* Empty States */
+.ios-empty-state {
+  text-align: center;
+  padding: 3rem 1.5rem;
+}
+.empty-icon-circle {
+  width: 50px;
+  height: 50px;
+  border-radius: var(--radius-full);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--ios-text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 0.75rem auto;
+}
+.empty-icon-circle svg {
+  width: 22px;
+  height: 22px;
+}
+.ios-empty-state h3 {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #ffffff;
+  margin-bottom: 0.25rem;
+}
+.ios-empty-state p {
+  font-size: 0.8rem;
+  color: var(--ios-text-secondary);
+}
+
+/* ==========================================================================
+   FUNDS TAB (HOW MUCH MONEY I GOT)
+   ========================================================================== */
+.ios-wallet-hero {
+  background: var(--ios-bg-card);
+  backdrop-filter: var(--ios-blur-material);
+  -webkit-backdrop-filter: var(--ios-blur-material);
+  border: var(--ios-glass-border);
+  border-radius: var(--radius-lg);
+  padding: 1.75rem 1.25rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.wallet-big-value {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.25rem;
+  margin: 0.35rem 0;
+}
+.currency-prefix {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--ios-text-secondary);
+}
+.number-display {
+  font-size: 3.25rem;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  color: #ffffff;
+  line-height: 1;
+}
+.wallet-sync-status {
+  font-size: 0.75rem;
+  color: var(--ios-text-secondary);
+}
+
+.ios-form-card {
+  background: var(--ios-bg-card);
+  backdrop-filter: var(--ios-blur-material);
+  border: var(--ios-glass-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+.form-row-apple {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  border-bottom: var(--ios-divider);
+  gap: 1rem;
+}
+.form-row-apple label {
+  font-size: 0.85rem;
+  color: #ffffff;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.apple-input-wrap {
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: var(--radius-sm);
+  padding: 0.25rem 0.65rem;
+}
+.input-curr {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--ios-text-secondary);
+  margin-right: 0.25rem;
+}
+.apple-text-input {
+  background: transparent;
+  border: none;
+  color: #ffffff;
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-align: right;
+  outline: none;
+  width: 100%;
+}
+.apple-text-input::placeholder {
+  color: var(--ios-text-tertiary);
+}
+.apple-select {
+  background: rgba(255, 255, 255, 0.08);
+  border: none;
+  color: #ffffff;
+  padding: 0.35rem 0.75rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  outline: none;
+}
+.form-action-row {
+  padding: 0.75rem 1rem;
+}
+.ios-primary-block-btn {
+  width: 100%;
+  background: var(--ios-blue);
+  color: #ffffff;
+  border: none;
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 0.75rem;
+  border-radius: var(--radius-md);
+}
+.ios-green-block-btn {
+  width: 100%;
+  background: var(--ios-green);
+  color: #ffffff;
+  border: none;
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 0.75rem;
+  border-radius: var(--radius-md);
+}
+
+/* ==========================================================================
+   BOTTOM NAVIGATION BAR (iOS Tab Bar)
+   ========================================================================== */
+.ios-tab-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background: rgba(18, 18, 20, 0.85);
+  backdrop-filter: var(--ios-blur-material);
+  -webkit-backdrop-filter: var(--ios-blur-material);
+  border-top: var(--ios-divider);
+  padding: 0.45rem 1rem calc(0.45rem + var(--safe-bottom)) 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  max-width: 680px;
+  margin: 0 auto;
+}
+.tab-item {
+  background: transparent;
+  border: none;
+  color: var(--ios-text-secondary);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  font-size: 0.65rem;
+  font-weight: 500;
+  padding: 0.2rem 0.6rem;
+}
+.tab-item svg {
+  width: 20px;
+  height: 20px;
+}
+.tab-item.active {
+  color: var(--ios-blue);
+}
+
+.center-add-circle {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--ios-blue);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: -14px;
+  box-shadow: 0 4px 12px rgba(10, 132, 255, 0.4);
+}
+.center-add-circle svg {
+  width: 22px;
+  height: 22px;
+}
+
+/* Footer Backlink per AGENTS.md rule */
+.ios-footer {
+  margin-top: auto;
+  padding-top: 1.5rem;
+  text-align: center;
+  font-size: 0.72rem;
+}
+.ios-footer a {
+  color: var(--ios-text-tertiary);
+  text-decoration: none;
+  font-weight: 500;
+}
+.ios-footer a:hover {
+  color: var(--ios-text-secondary);
+}
+
+/* ==========================================================================
+   MODAL BACKDROP & APPLE BOTTOM SHEET
+   ========================================================================== */
+.ios-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 1000;
+  display: none;
+  align-items: flex-end; /* Slides from bottom like iOS sheet */
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 200ms ease;
+}
+.ios-modal-backdrop.open {
+  display: flex;
+  opacity: 1;
+}
+
+.ios-bottom-sheet {
+  background: rgba(28, 28, 30, 0.95);
+  backdrop-filter: var(--ios-blur-material);
+  -webkit-backdrop-filter: var(--ios-blur-material);
+  border-top: var(--ios-glass-border);
+  border-top-left-radius: var(--radius-sheet);
+  border-top-right-radius: var(--radius-sheet);
+  width: 100%;
+  max-width: 680px;
+  max-height: 88vh;
+  overflow-y: auto;
+  box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.6);
+  transform: translateY(100%);
+  transition: transform 300ms cubic-bezier(0.16, 1, 0.3, 1);
+  padding: 0.75rem 1.25rem calc(1.5rem + var(--safe-bottom)) 1.25rem;
+}
+.ios-modal-backdrop.open .ios-bottom-sheet {
+  transform: translateY(0);
+}
+
+/* Drag Handle */
+.sheet-drag-handle-zone {
+  display: flex;
+  justify-content: center;
+  padding: 0.25rem 0 0.85rem 0;
+}
+.sheet-drag-pill {
+  width: 38px;
+  height: 5px;
+  border-radius: var(--radius-full);
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.sheet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+}
+.sheet-segmented-toggle {
+  display: flex;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 0.2rem;
+  border-radius: var(--radius-md);
+}
+.sheet-seg-btn {
+  background: transparent;
+  border: none;
+  color: var(--ios-text-secondary);
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 0.4rem 1.1rem;
+  border-radius: var(--radius-sm);
+}
+.sheet-seg-btn.active#btnSheetExpense {
+  background: var(--ios-red);
+  color: #ffffff;
+}
+.sheet-seg-btn.active#btnSheetIncome {
+  background: var(--ios-green);
+  color: #ffffff;
+}
+.sheet-close-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: var(--ios-text-secondary);
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  font-size: 1.3rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sheet-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+/* Big Amount Input */
+.sheet-amount-container {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  padding: 0.5rem 0;
+}
+.sheet-currency-symbol {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--ios-text-secondary);
+  margin-right: 0.35rem;
+}
+.sheet-amount-input {
+  background: transparent;
+  border: none;
+  color: #ffffff;
+  font-size: 3.5rem;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  width: 220px;
+  text-align: center;
+  outline: none;
+}
+.sheet-amount-input::placeholder {
+  color: var(--ios-text-tertiary);
+}
+
+.sheet-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.sheet-section-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--ios-text-secondary);
+  letter-spacing: 0.05em;
+}
+
+.apple-category-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+.category-chip {
+  background: rgba(255, 255, 255, 0.06);
+  border: var(--ios-glass-border);
+  color: var(--ios-text-primary);
+  padding: 0.45rem 0.85rem;
+  border-radius: var(--radius-full);
+  font-size: 0.82rem;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.category-chip.selected {
+  background: var(--ios-blue);
+  color: #ffffff;
+  border-color: var(--ios-blue);
+}
+
+.apple-sheet-input {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.08);
+  border: none;
+  color: #ffffff;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-md);
+  font-size: 0.9rem;
+  outline: none;
+}
+.apple-sheet-input::placeholder {
+  color: var(--ios-text-secondary);
+}
+
+.apple-quick-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.apple-tag {
+  background: rgba(255, 255, 255, 0.05);
+  border: var(--ios-glass-border);
+  color: var(--ios-text-secondary);
+  font-size: 0.75rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: var(--radius-full);
+}
+
+.sheet-row-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.85rem;
+}
+.sheet-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+/* ==========================================================================
+   DIALOG CARDS (Settings & Reminders)
+   ========================================================================== */
+.ios-dialog-card {
+  background: rgba(28, 28, 30, 0.95);
+  backdrop-filter: var(--ios-blur-material);
+  -webkit-backdrop-filter: var(--ios-blur-material);
+  border: var(--ios-glass-border);
+  border-radius: var(--radius-lg);
+  width: 90%;
+  max-width: 440px;
+  margin: auto;
+  padding: 1.5rem;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
+}
+.dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+.dialog-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+.dialog-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+.dialog-description {
+  font-size: 0.82rem;
+  color: var(--ios-text-secondary);
+  line-height: 1.45;
+}
+.dialog-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.88rem;
+  color: #ffffff;
+}
+.dialog-actions {
+  display: flex;
+  gap: 0.65rem;
+  justify-content: flex-end;
+  margin-top: 0.5rem;
+}
+.ios-secondary-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: none;
+  color: #ffffff;
+  padding: 0.55rem 1rem;
+  border-radius: var(--radius-md);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+/* iOS Toggle Switch */
+.ios-switch {
+  position: relative;
+  display: inline-block;
+  width: 48px;
+  height: 28px;
+}
+.ios-switch input { opacity: 0; width: 0; height: 0; }
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: rgba(255, 255, 255, 0.18);
+  transition: 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  border-radius: var(--radius-full);
+}
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 22px;
+  width: 22px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+input:checked + .slider {
+  background-color: var(--ios-green);
+}
+input:checked + .slider:before {
+  transform: translateX(20px);
+}
+
+.ios-time-picker {
+  background: rgba(255, 255, 255, 0.08);
+  border: none;
+  color: #ffffff;
+  padding: 0.35rem 0.65rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+/* Storage Info Box */
+.storage-info-box {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 0.85rem;
+  border-radius: var(--radius-md);
+}
+.storage-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  background: var(--ios-blue-dim);
+  color: var(--ios-blue);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.storage-info-box strong {
+  font-size: 0.85rem;
+  color: #ffffff;
+}
+.storage-info-box p {
+  font-size: 0.72rem;
+  color: var(--ios-green);
+}
+
+.dialog-setting-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.group-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: var(--ios-text-secondary);
+}
+.dialog-btn-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+.ios-list-action-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: var(--ios-glass-border);
+  color: #ffffff;
+  padding: 0.7rem 0.95rem;
+  border-radius: var(--radius-md);
+  font-size: 0.82rem;
+  font-weight: 500;
+  text-align: left;
+}
+.ios-list-action-btn:hover {
+  background: rgba(255, 255, 255, 0.09);
+}
+.ios-list-action-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Reduced Motion Support per Apple Design guidelines */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .ios-bottom-sheet {
+    transform: none !important;
+  }
+}
