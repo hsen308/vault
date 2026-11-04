@@ -100,6 +100,7 @@
           </div>
           <div class="wallet-amount-wrap">
             <h1 class="ios-display-number" id="heroTotalFunds">$0.00</h1>
+            <div class="ios-sub-currency-balance" id="heroTotalFundsLBP">≈ 0k L.L</div>
           </div>
           <div class="wallet-card-footer">
             <div class="wallet-stat">
@@ -238,6 +239,7 @@
             <span class="currency-prefix" id="fundsCurrencyPrefix">$</span>
             <span class="number-display" id="fundsExactTotal">0.00</span>
           </div>
+          <p class="wallet-sub-lbp" id="fundsExactTotalLBP">≈ 0k L.L (89,000/$)</p>
           <p class="wallet-sync-status" id="fundsLastUpdated">Baseline: $0.00</p>
         </div>
 
@@ -248,8 +250,11 @@
             <div class="form-row-apple">
               <label for="inputExactMoney">How much do you have?</label>
               <div class="apple-input-wrap">
-                <span class="input-curr" id="currInputPrefix">$</span>
-                <input type="number" id="inputExactMoney" class="apple-text-input" placeholder="0.00" step="0.01">
+                <select id="fundsCalibrateCurr" class="apple-mini-curr-select">
+                  <option value="USD">USD ($)</option>
+                  <option value="LBP_K">LBP (k)</option>
+                </select>
+                <input type="number" id="inputExactMoney" class="apple-text-input" placeholder="0" step="any">
               </div>
             </div>
             <div class="form-row-apple">
@@ -271,8 +276,11 @@
             <div class="form-row-apple">
               <label for="inflowAmount">Amount Received</label>
               <div class="apple-input-wrap">
-                <span class="input-curr" id="currInflowPrefix">$</span>
-                <input type="number" id="inflowAmount" class="apple-text-input" placeholder="0.00" step="0.01" required>
+                <select id="inflowCurrSelect" class="apple-mini-curr-select">
+                  <option value="USD">USD ($)</option>
+                  <option value="LBP_K">LBP (k)</option>
+                </select>
+                <input type="number" id="inflowAmount" class="apple-text-input" placeholder="0" step="any" required>
               </div>
             </div>
             <div class="form-row-apple">
@@ -403,35 +411,52 @@
 
       <form id="sheetTxForm" class="sheet-body">
         <input type="hidden" id="sheetTxType" value="expense">
+        <input type="hidden" id="sheetCurrencyInput" value="USD">
+
+        <!-- Currency Selector: USD ($) vs LBP (k) -->
+        <div class="sheet-currency-segmented">
+          <button type="button" class="sheet-curr-pill active" id="btnSheetCurrUSD" data-curr="USD">
+            USD ($)
+          </button>
+          <button type="button" class="sheet-curr-pill" id="btnSheetCurrLBP" data-curr="LBP_K">
+            LBP (k) <span class="curr-rate-badge">89k/$</span>
+          </button>
+        </div>
 
         <!-- Tactile Big Number Amount Input -->
         <div class="sheet-amount-container">
           <span class="sheet-currency-symbol" id="sheetCurrSymbol">$</span>
-          <input type="number" id="sheetAmount" class="sheet-amount-input" placeholder="0" step="0.01" min="0.01" required autofocus inputmode="decimal">
+          <input type="number" id="sheetAmount" class="sheet-amount-input" placeholder="0" step="any" min="0.001" required autofocus inputmode="decimal">
+          <span class="sheet-currency-suffix" id="sheetCurrSuffix" style="display: none;">k L.L</span>
+        </div>
+
+        <!-- Live Conversion Hint -->
+        <div class="sheet-conversion-hint" id="sheetConversionHint">
+          Enter amount in USD
         </div>
 
         <!-- Clean Categories Horizontal Scroll / Grid -->
         <div class="sheet-section" id="sheetCategorySection">
           <span class="sheet-section-label">Category</span>
           <div class="apple-category-chips" id="sheetCategoryPicker">
-            <!-- Injected via JS -->
+            <!-- Injected via JS with crisp Lucide icons -->
           </div>
           <input type="hidden" id="sheetSelectedCategory" value="Food & Dining">
         </div>
 
-        <!-- Note Input with Quick Tag Pills -->
+        <!-- Note Input with Quick Tag Pills (Clean Icons, No Emojis) -->
         <div class="sheet-section">
           <span class="sheet-section-label">Note / Description</span>
           <input type="text" id="sheetNote" class="apple-sheet-input" placeholder="What was this for?" required>
           
           <div class="apple-quick-tags" id="sheetQuickTags">
-            <button type="button" class="apple-tag" data-tag="Coffee ☕">Coffee ☕</button>
-            <button type="button" class="apple-tag" data-tag="Lunch 🍔">Lunch 🍔</button>
-            <button type="button" class="apple-tag" data-tag="Groceries 🛒">Groceries 🛒</button>
-            <button type="button" class="apple-tag" data-tag="Fuel ⛽">Fuel ⛽</button>
-            <button type="button" class="apple-tag" data-tag="Dinner 🍕">Dinner 🍕</button>
-            <button type="button" class="apple-tag" data-tag="Uber 🚕">Uber 🚕</button>
-            <button type="button" class="apple-tag" data-tag="Subscription 💳">Subscription 💳</button>
+            <button type="button" class="apple-tag" data-tag="Coffee"><i data-lucide="coffee"></i> Coffee</button>
+            <button type="button" class="apple-tag" data-tag="Lunch"><i data-lucide="utensils"></i> Lunch</button>
+            <button type="button" class="apple-tag" data-tag="Groceries"><i data-lucide="shopping-cart"></i> Groceries</button>
+            <button type="button" class="apple-tag" data-tag="Fuel"><i data-lucide="fuel"></i> Fuel</button>
+            <button type="button" class="apple-tag" data-tag="Dinner"><i data-lucide="soup"></i> Dinner</button>
+            <button type="button" class="apple-tag" data-tag="Uber"><i data-lucide="car"></i> Uber</button>
+            <button type="button" class="apple-tag" data-tag="Subscription"><i data-lucide="credit-card"></i> Subscription</button>
           </div>
         </div>
 

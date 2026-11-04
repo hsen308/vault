@@ -8,18 +8,19 @@
 // ============================================================================
 const DB_NAME = 'VaultDB';
 const DB_VERSION = 1;
+const LBP_RATE = 89000; // Standard Lebanese market rate: 1 USD = 89,000 LBP (89k)
 
 const CATEGORIES = [
-  { id: 'Food & Dining', name: 'Food & Dining', icon: '☕', color: '#ff453a' },
-  { id: 'Groceries', name: 'Groceries', icon: '🛒', color: '#ff9f0a' },
-  { id: 'Transport & Fuel', name: 'Transport & Fuel', icon: '⛽', color: '#64d2ff' },
-  { id: 'Shopping', name: 'Shopping & Gear', icon: '🛍️', color: '#bf5af2' },
-  { id: 'Bills & Utilities', name: 'Bills & Utilities', icon: '💡', color: '#0a84ff' },
-  { id: 'Entertainment', name: 'Entertainment', icon: '🎬', color: '#ff375f' },
-  { id: 'Health & Gym', name: 'Health & Gym', icon: '🏋️', color: '#30d158' },
-  { id: 'Work & Tools', name: 'Work & Tools', icon: '💻', color: '#ffd60a' },
-  { id: 'Travel & Trips', name: 'Travel & Trips', icon: '✈️', color: '#5e5ce6' },
-  { id: 'Other', name: 'Other / Misc', icon: '📦', color: '#8e8e93' }
+  { id: 'Food & Dining', name: 'Food & Dining', icon: 'utensils', color: '#ff453a' },
+  { id: 'Groceries', name: 'Groceries', icon: 'shopping-cart', color: '#ff9f0a' },
+  { id: 'Transport & Fuel', name: 'Transport & Fuel', icon: 'fuel', color: '#64d2ff' },
+  { id: 'Shopping', name: 'Shopping & Gear', icon: 'shopping-bag', color: '#bf5af2' },
+  { id: 'Bills & Utilities', name: 'Bills & Utilities', icon: 'zap', color: '#0a84ff' },
+  { id: 'Entertainment', name: 'Entertainment', icon: 'film', color: '#ff375f' },
+  { id: 'Health & Gym', name: 'Health & Gym', icon: 'dumbbell', color: '#30d158' },
+  { id: 'Work & Tools', name: 'Work & Tools', icon: 'laptop', color: '#ffd60a' },
+  { id: 'Travel & Trips', name: 'Travel & Trips', icon: 'plane', color: '#5e5ce6' },
+  { id: 'Other', name: 'Other / Misc', icon: 'layers', color: '#8e8e93' }
 ];
 
 const CURRENCIES = {
@@ -368,6 +369,12 @@ function renderWalletMetrics() {
   const heroFunds = document.getElementById('heroTotalFunds');
   if (heroFunds) heroFunds.textContent = formatMoney(totalFunds);
 
+  const heroFundsLBP = document.getElementById('heroTotalFundsLBP');
+  if (heroFundsLBP) {
+    const lbpK = Math.round((totalFunds * LBP_RATE) / 1000);
+    heroFundsLBP.textContent = `≈ ${lbpK.toLocaleString()}k L.L (89,000/$)`;
+  }
+
   const heroToday = document.getElementById('heroSpentToday');
   if (heroToday) heroToday.textContent = formatMoney(spentToday);
 
@@ -656,22 +663,33 @@ function renderDailyGroupedList() {
 
 function renderTxRowHTML(tx) {
   const isExp = tx.type === 'expense';
-  const catObj = CATEGORIES.find(c => c.name === tx.category) || { icon: '💳', color: '#8e8e93' };
+  const catObj = CATEGORIES.find(c => c.name === tx.category) || { icon: 'layers', color: '#8e8e93' };
+
+  let mainDisplay = '';
+  let subDisplay = '';
+  if (tx.inputCurrency === 'LBP_K') {
+    mainDisplay = `${tx.inputAmount}k L.L`;
+    subDisplay = `≈ $${(Number(tx.amount) || 0).toFixed(2)}`;
+  } else {
+    mainDisplay = formatMoney(tx.amount);
+    const lbpK = Math.round(((Number(tx.amount) || 0) * LBP_RATE) / 1000);
+    subDisplay = `≈ ${lbpK.toLocaleString()}k L.L`;
+  }
 
   return `
     <div class="ios-list-row" data-id="${tx.id}">
       <div class="row-left">
-        <div class="row-icon-circle">
-          ${catObj.icon || '💳'}
+        <div class="row-icon-circle" style="color: ${catObj.color};">
+          <i data-lucide="${catObj.icon}"></i>
         </div>
         <div class="row-text">
           <span class="row-title">${escapeHTML(tx.note || tx.category)}</span>
-          <span class="row-meta">${tx.category} • ${tx.paymentMethod || 'Cash'}</span>
+          <span class="row-meta">${tx.category} • ${tx.paymentMethod || 'Cash'} • <span style="color: var(--ios-text-tertiary);">${subDisplay}</span></span>
         </div>
       </div>
       <div class="row-right">
         <span class="row-amount ${isExp ? 'expense' : 'income'}">
-          ${isExp ? '-' : '+'}${formatMoney(tx.amount)}
+          ${isExp ? '-' : '+'}${mainDisplay}
         </span>
         <button class="row-delete-btn" data-action="delete" data-id="${tx.id}" title="Delete">
           <i data-lucide="trash-2"></i>
@@ -686,6 +704,12 @@ function renderFundsView() {
   const total = calculateRealTimeBalance();
   const totalEl = document.getElementById('fundsExactTotal');
   if (totalEl) totalEl.textContent = total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  const totalLBP = document.getElementById('fundsExactTotalLBP');
+  if (totalLBP) {
+    const lbpK = Math.round((total * LBP_RATE) / 1000);
+    totalLBP.textContent = `≈ ${lbpK.toLocaleString()}k L.L (89,000/$)`;
+  }
 
   const statusEl = document.getElementById('fundsLastUpdated');
   if (statusEl) {
@@ -861,10 +885,14 @@ function updateCategoryChips() {
 
   container.innerHTML = CATEGORIES.map((cat, idx) => `
     <button type="button" class="category-chip ${idx === 0 ? 'selected' : ''}" data-cat="${cat.name}">
-      <span>${cat.icon}</span>
+      <i data-lucide="${cat.icon}"></i>
       <span>${cat.name}</span>
     </button>
   `).join('');
+
+  if (window.lucide) {
+    lucide.createIcons();
+  }
 
   container.addEventListener('click', (e) => {
     const chip = e.target.closest('.category-chip');
@@ -968,6 +996,62 @@ function setupEventListeners() {
     }
     haptic();
   });
+
+  // Currency Toggle in Transaction Sheet
+  const btnCurrUSD = document.getElementById('btnSheetCurrUSD');
+  const btnCurrLBP = document.getElementById('btnSheetCurrLBP');
+  const sheetAmtInput = document.getElementById('sheetAmount');
+  const sheetCurrSym = document.getElementById('sheetCurrSymbol');
+  const sheetCurrSuffix = document.getElementById('sheetCurrSuffix');
+  const sheetConversionHint = document.getElementById('sheetConversionHint');
+  const sheetCurrInput = document.getElementById('sheetCurrencyInput');
+
+  function updateSheetConversionHint() {
+    const val = parseFloat(sheetAmtInput.value);
+    const isLbp = sheetCurrInput.value === 'LBP_K';
+
+    if (isNaN(val) || val <= 0) {
+      if (sheetConversionHint) {
+        sheetConversionHint.textContent = isLbp ? '100 = 100,000 L.L (89k = $1.00)' : 'Enter amount in USD';
+      }
+      return;
+    }
+
+    if (isLbp) {
+      const usdVal = ((val * 1000) / LBP_RATE).toFixed(2);
+      const fullLBP = (val * 1000).toLocaleString();
+      if (sheetConversionHint) {
+        sheetConversionHint.textContent = `${val}k L.L (${fullLBP} L.L) ≈ $${usdVal} USD`;
+      }
+    } else {
+      const lbpK = ((val * LBP_RATE) / 1000).toFixed(1);
+      if (sheetConversionHint) {
+        sheetConversionHint.textContent = `$${val} ≈ ${lbpK}k L.L (at 89k/$)`;
+      }
+    }
+  }
+
+  btnCurrUSD?.addEventListener('click', () => {
+    btnCurrUSD.classList.add('active');
+    btnCurrLBP.classList.remove('active');
+    sheetCurrInput.value = 'USD';
+    sheetCurrSym.textContent = '$';
+    sheetCurrSuffix.style.display = 'none';
+    updateSheetConversionHint();
+    haptic();
+  });
+
+  btnCurrLBP?.addEventListener('click', () => {
+    btnCurrLBP.classList.add('active');
+    btnCurrUSD.classList.remove('active');
+    sheetCurrInput.value = 'LBP_K';
+    sheetCurrSym.textContent = 'L.L ';
+    sheetCurrSuffix.style.display = 'inline-block';
+    updateSheetConversionHint();
+    haptic();
+  });
+
+  sheetAmtInput?.addEventListener('input', updateSheetConversionHint);
 
   // Submit Transaction
   document.getElementById('sheetTxForm')?.addEventListener('submit', handleTxSubmit);
@@ -1089,8 +1173,14 @@ function setupEventListeners() {
 async function handleTxSubmit(e) {
   e.preventDefault();
 
-  const amount = parseFloat(document.getElementById('sheetAmount')?.value);
-  if (isNaN(amount) || amount <= 0) return;
+  const enteredVal = parseFloat(document.getElementById('sheetAmount')?.value);
+  if (isNaN(enteredVal) || enteredVal <= 0) return;
+
+  const currMode = document.getElementById('sheetCurrencyInput')?.value || 'USD';
+  let amountUSD = enteredVal;
+  if (currMode === 'LBP_K') {
+    amountUSD = (enteredVal * 1000) / LBP_RATE;
+  }
 
   const type = document.getElementById('sheetTxType')?.value || 'expense';
   const category = type === 'income' ? 'Income' : (document.getElementById('sheetSelectedCategory')?.value || 'Other');
@@ -1104,7 +1194,9 @@ async function handleTxSubmit(e) {
   const record = {
     id: 'tx_' + Date.now(),
     type,
-    amount,
+    amount: amountUSD,
+    inputCurrency: currMode,
+    inputAmount: enteredVal,
     category,
     note,
     date,
@@ -1133,12 +1225,14 @@ async function deleteTransaction(id) {
 }
 
 async function handleExactMoneySubmit() {
-  const target = parseFloat(document.getElementById('inputExactMoney')?.value);
+  const entered = parseFloat(document.getElementById('inputExactMoney')?.value);
+  const curr = document.getElementById('fundsCalibrateCurr')?.value || 'USD';
   const note = document.getElementById('inputCalibrateNote')?.value || 'Wallet count & bank check';
-  if (isNaN(target)) return;
+  if (isNaN(entered)) return;
 
+  const targetUSD = curr === 'LBP_K' ? (entered * 1000) / LBP_RATE : entered;
   const current = calculateRealTimeBalance();
-  const diff = target - current;
+  const diff = targetUSD - current;
 
   state.baseBalance = (Number(state.baseBalance) || 0) + diff;
   await saveSettings();
@@ -1146,9 +1240,11 @@ async function handleExactMoneySubmit() {
   const adjustmentRecord = {
     id: 'bal_' + Date.now(),
     date: getTodayISO(),
-    amount: target,
-    source: note,
-    account: 'Vault Balance',
+    amount: targetUSD,
+    inputCurrency: curr,
+    inputAmount: entered,
+    source: note + (curr === 'LBP_K' ? ` (${entered}k L.L)` : ` ($${entered})`),
+    account: curr === 'LBP_K' ? 'L.L Cash' : 'Vault Balance',
     timestamp: Date.now(),
     isCalibration: true
   };
@@ -1165,11 +1261,13 @@ async function handleExactMoneySubmit() {
 
 async function handleInflowSubmit(e) {
   e.preventDefault();
-  const amount = parseFloat(document.getElementById('inflowAmount')?.value);
+  const entered = parseFloat(document.getElementById('inflowAmount')?.value);
+  const curr = document.getElementById('inflowCurrSelect')?.value || 'USD';
   const source = document.getElementById('inflowSource')?.value;
   const account = document.getElementById('inflowAccount')?.value || 'Cash';
-  if (isNaN(amount) || amount <= 0) return;
+  if (isNaN(entered) || entered <= 0) return;
 
+  const amountUSD = curr === 'LBP_K' ? (entered * 1000) / LBP_RATE : entered;
   const now = new Date();
   const date = getTodayISO();
 
@@ -1177,7 +1275,9 @@ async function handleInflowSubmit(e) {
   const txRecord = {
     id: 'tx_' + Date.now(),
     type: 'income',
-    amount,
+    amount: amountUSD,
+    inputCurrency: curr,
+    inputAmount: entered,
     category: 'Income',
     note: source,
     date,
@@ -1190,8 +1290,10 @@ async function handleInflowSubmit(e) {
   const adjRecord = {
     id: 'bal_' + Date.now(),
     date,
-    amount,
-    source,
+    amount: amountUSD,
+    inputCurrency: curr,
+    inputAmount: entered,
+    source: source + (curr === 'LBP_K' ? ` (${entered}k L.L)` : ` ($${entered})`),
     account,
     timestamp: Date.now()
   };
