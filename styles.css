@@ -610,21 +610,41 @@ button:active, .tab-item:active, .ios-action-pill:active, .apple-tag:active {
 .row-amount.expense { color: var(--ios-red); }
 .row-amount.income { color: var(--ios-green); }
 
-.row-delete-btn {
+.row-delete-btn,
+.row-edit-btn {
   background: transparent;
   border: none;
   color: var(--ios-text-tertiary);
-  padding: 0.3rem;
+  padding: 0.35rem;
   display: flex;
   align-items: center;
-  border-radius: 4px;
+  justify-content: center;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 140ms ease;
+}
+.row-edit-btn:hover {
+  color: var(--ios-blue);
+  background: rgba(10, 132, 255, 0.12);
+}
+.row-edit-btn:active {
+  transform: scale(0.9);
 }
 .row-delete-btn:hover {
   color: var(--ios-red);
+  background: rgba(255, 69, 58, 0.12);
 }
-.row-delete-btn svg {
+.row-delete-btn:active {
+  transform: scale(0.9);
+}
+.row-delete-btn svg,
+.row-edit-btn svg {
   width: 15px;
   height: 15px;
+}
+.row-cat-badge {
+  color: var(--ios-text-primary);
+  font-weight: 500;
 }
 
 /* ==========================================================================
@@ -815,6 +835,25 @@ button:active, .tab-item:active, .ios-action-pill:active, .apple-tag:active {
   padding: 0.75rem;
   border-radius: var(--radius-md);
 }
+.ios-destructive-block-btn {
+  width: 100%;
+  background: rgba(255, 69, 58, 0.12);
+  color: var(--ios-red);
+  border: 1px solid rgba(255, 69, 58, 0.25);
+  font-size: 0.88rem;
+  font-weight: 600;
+  padding: 0.7rem;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 140ms ease;
+  margin-top: 0.5rem;
+}
+.ios-destructive-block-btn:hover {
+  background: rgba(255, 69, 58, 0.22);
+}
+.ios-destructive-block-btn:active {
+  transform: scale(0.98);
+}
 
 /* ==========================================================================
    BOTTOM NAVIGATION BAR (iOS Tab Bar)
@@ -951,6 +990,30 @@ button:active, .tab-item:active, .ios-action-pill:active, .apple-tag:active {
   align-items: center;
   justify-content: space-between;
   margin-bottom: 1.25rem;
+  gap: 0.5rem;
+}
+.sheet-header-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.sheet-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+.sheet-mode-badge {
+  font-size: 0.62rem;
+  font-weight: 700;
+  padding: 0.18rem 0.5rem;
+  border-radius: var(--radius-full);
+  background: rgba(10, 132, 255, 0.2);
+  color: var(--ios-blue);
+  border: 1px solid rgba(10, 132, 255, 0.4);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 .sheet-segmented-toggle {
   display: flex;
@@ -1143,6 +1206,7 @@ button:active, .tab-item:active, .ios-action-pill:active, .apple-tag:active {
 }
 .dialog-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.65rem;
   justify-content: flex-end;
   margin-top: 0.5rem;

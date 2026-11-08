@@ -72,8 +72,8 @@
           <i data-lucide="bell-ring"></i>
         </div>
         <div class="banner-text">
-          <strong>Daily Spending Reminder</strong>
-          <span>Get a quiet evening nudge to log your purchases.</span>
+          <strong>Daily Spending Reminders (2x / Day)</strong>
+          <span>Get 2 quiet nudges a day (afternoon & evening) to keep your logs accurate.</span>
         </div>
         <div class="banner-buttons">
           <button id="btnEnableNotifications" class="ios-action-pill">Turn On</button>
@@ -402,6 +402,10 @@
       </div>
 
       <div class="sheet-header">
+        <div class="sheet-header-title-wrap">
+          <span class="sheet-mode-badge" id="sheetModeBadge" style="display: none;">EDIT</span>
+          <h3 class="sheet-title" id="sheetModalTitle">Log Spend</h3>
+        </div>
         <div class="sheet-segmented-toggle">
           <button type="button" class="sheet-seg-btn active" id="btnSheetExpense">Expense</button>
           <button type="button" class="sheet-seg-btn" id="btnSheetIncome">Income</button>
@@ -410,6 +414,7 @@
       </div>
 
       <form id="sheetTxForm" class="sheet-body">
+        <input type="hidden" id="sheetEditingTxId" value="">
         <input type="hidden" id="sheetTxType" value="expense">
         <input type="hidden" id="sheetCurrencyInput" value="USD">
 
@@ -477,10 +482,13 @@
           </div>
         </div>
 
-        <!-- Save Button -->
+        <!-- Save & Delete Buttons -->
         <div class="sheet-footer">
           <button type="submit" class="ios-primary-block-btn" id="btnSaveTransaction">
             Save
+          </button>
+          <button type="button" class="ios-destructive-block-btn" id="btnDeleteFromSheet" style="display: none;">
+            Delete This Log
           </button>
         </div>
       </form>
@@ -488,38 +496,55 @@
   </div>
 
   <!-- ============================================================ -->
-  <!-- MODAL: REMINDER & NOTIFICATION SETTINGS -->
+  <!-- MODAL: REMINDER & NOTIFICATION SETTINGS (2X DAILY) -->
   <!-- ============================================================ -->
   <div class="ios-modal-backdrop" id="reminderModal" aria-hidden="true">
     <div class="ios-dialog-card">
       <div class="dialog-header">
-        <h3 class="dialog-title">Daily Reminder</h3>
+        <h3 class="dialog-title">Daily Reminders (2x / Day)</h3>
         <button class="sheet-close-btn" id="btnCloseReminderModal">&times;</button>
       </div>
 
       <div class="dialog-body">
         <p class="dialog-description">
-          Vault will send you a gentle notification to remind you to log your daily expenses.
+          Vault sends 2 daily notifications so you never forget to log a purchase: a midday check-in and an evening review.
         </p>
 
         <div class="dialog-row">
-          <span>Enable Daily Reminder</span>
+          <div style="display: flex; flex-direction: column;">
+            <span style="font-weight: 600;">Enable Daily Reminders</span>
+            <span style="font-size: 0.72rem; color: var(--ios-text-tertiary);">2 scheduled nudges each day</span>
+          </div>
           <label class="ios-switch">
             <input type="checkbox" id="toggleReminder">
             <span class="slider"></span>
           </label>
         </div>
 
-        <div class="dialog-row" id="reminderTimeRow">
-          <span>Reminder Time</span>
-          <input type="time" id="reminderTimeInput" class="ios-time-picker" value="20:30">
+        <div class="dialog-row" id="reminderTime1Row">
+          <div style="display: flex; flex-direction: column;">
+            <span>1st Alert (Midday)</span>
+            <span style="font-size: 0.72rem; color: var(--ios-text-tertiary);">Log morning & lunch spending</span>
+          </div>
+          <input type="time" id="reminderTimeInput" class="ios-time-picker" value="13:00">
+        </div>
+
+        <div class="dialog-row" id="reminderTime2Row">
+          <div style="display: flex; flex-direction: column;">
+            <span>2nd Alert (Evening)</span>
+            <span style="font-size: 0.72rem; color: var(--ios-text-tertiary);">Wrap up daily purchases</span>
+          </div>
+          <input type="time" id="reminderTime2Input" class="ios-time-picker" value="20:30">
         </div>
 
         <div class="dialog-actions">
-          <button id="btnSendTestNotification" class="ios-secondary-btn">
-            Test Notification
+          <button id="btnSendTestNotification" class="ios-secondary-btn" type="button" title="Test Midday Alert">
+            Test Midday
           </button>
-          <button id="btnSaveReminderSettings" class="ios-primary-btn">
+          <button id="btnSendTestNotification2" class="ios-secondary-btn" type="button" title="Test Evening Alert">
+            Test Evening
+          </button>
+          <button id="btnSaveReminderSettings" class="ios-primary-btn" type="button">
             Save Settings
           </button>
         </div>

@@ -41,10 +41,19 @@ let state = {
   activeTab: 'dashboard',
   chartRange: 'month',
   reminderEnabled: false,
-  reminderTime: '20:30',
+  reminderTime: '13:00', // 1st Notification: Midday check-in (1:00 PM)
+  reminderTime2: '20:30', // 2nd Notification: Evening review (8:30 PM)
   transactions: [],
   adjustments: []
 };
+
+function sortTransactions() {
+  state.transactions.sort((a, b) => {
+    const dateDiff = new Date((b.date || '1970-01-01') + 'T00:00:00') - new Date((a.date || '1970-01-01') + 'T00:00:00');
+    if (dateDiff !== 0) return dateDiff;
+    return (b.timestamp || 0) - (a.timestamp || 0);
+  });
+}
 
 let db = null;
 let dailyChart = null;
@@ -114,13 +123,19 @@ async function loadDataFromIndexedDB() {
     state.baseBalance = Number(settings.baseBalance) || 0;
     state.dailyBudget = Number(settings.dailyBudget) || 50;
     state.reminderEnabled = !!settings.reminderEnabled;
-    state.reminderTime = settings.reminderTime || '20:30';
+    state.reminderTime = settings.reminderTime || '13:00';
+    state.reminderTime2 = settings.reminderTime2 || '20:30';
+    // Backwards compatibility migration
+    if (!settings.reminderTime2 && state.reminderTime === '20:30') {
+      state.reminderTime = '13:00';
+      state.reminderTime2 = '20:30';
+    }
   }
 
   // Load Transactions
   state.transactions = await idbGetAll('transactions') || [];
-  // Sort descending by timestamp/date
-  state.transactions.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+  // Sort chronologically by date descending, then timestamp
+  sortTransactions();
 
   // Load Balances / Adjustments
   state.adjustments = await idbGetAll('balances') || [];
@@ -178,7 +193,8 @@ async function saveSettings() {
     baseBalance: state.baseBalance,
     dailyBudget: state.dailyBudget,
     reminderEnabled: state.reminderEnabled,
-    reminderTime: state.reminderTime
+    reminderTime: state.reminderTime,
+    reminderTime2: state.reminderTime2
   });
 }
 
@@ -256,8 +272,10 @@ function checkNotificationStatus() {
   const banner = document.getElementById('reminderBanner');
   const toggle = document.getElementById('toggleReminder');
   const timeInput = document.getElementById('reminderTimeInput');
+  const time2Input = document.getElementById('reminderTime2Input');
 
-  if (timeInput) timeInput.value = state.reminderTime;
+  if (timeInput) timeInput.value = state.reminderTime || '13:00';
+  if (time2Input) time2Input.value = state.reminderTime2 || '20:30';
   if (toggle) toggle.checked = state.reminderEnabled;
 
   if ('Notification' in window) {
@@ -286,53 +304,107 @@ async function requestNotificationPermission() {
     state.reminderEnabled = true;
     await saveSettings();
     checkNotificationStatus();
-    sendTestNotification('Vault Reminder Active', 'You will receive a daily nudge to record your spending.');
+    sendNotification(
+      'Vault Daily Reminders Active',
+      `You will receive 2 daily nudges (at ${state.reminderTime} and ${state.reminderTime2}) to record your spending.`,
+      'vault-setup-success'
+    );
   }
 }
 
-function sendTestNotification(title = 'Vault Spending Check', body = 'Remember to log what you spent today!') {
+function sendNotification(title = 'Vault Spending Check', body = 'Remember to log what you spent today!', tag = 'vault-daily-reminder') {
   if (!('Notification' in window) || Notification.permission !== 'granted') return;
+
+  const options = {
+    body: body,
+    icon: './icon-192.svg',
+    badge: './icon-192.svg',
+    tag: tag,
+    renotify: true
+  };
 
   if (navigator.serviceWorker && navigator.serviceWorker.controller) {
     navigator.serviceWorker.ready.then(reg => {
-      reg.showNotification(title, {
-        body: body,
-        icon: './icon-192.svg',
-        badge: './icon-192.svg',
-        tag: 'vault-daily-reminder'
-      });
+      reg.showNotification(title, options);
     });
   } else {
-    new Notification(title, {
-      body: body,
-      icon: './icon-192.svg'
-    });
+    try {
+      new Notification(title, options);
+    } catch (e) {
+      console.warn('Direct notification fallback error:', e);
+    }
   }
   haptic();
+}
+
+function sendTestNotification(slot = 1) {
+  const spentToday = getSpentToday();
+  if (slot === 1) {
+    const msg = spentToday > 0 
+      ? `Midday Check: You've logged ${formatMoney(spentToday)} today. Any other morning or lunch purchases to record?`
+      : `Midday Check: Remember to log your morning & lunch purchases in Vault!`;
+    sendNotification('Vault Midday Reminder (Alert 1 of 2)', msg, 'vault-test-1');
+  } else {
+    const msg = spentToday > 0 
+      ? `Evening Review: Total logged today: ${formatMoney(spentToday)}. Tap to add any dinner or late purchases.`
+      : `Evening Review: Did you have any purchases today? Take 10 seconds to log them before bed.`;
+    sendNotification('Vault Evening Review (Alert 2 of 2)', msg, 'vault-test-2');
+  }
 }
 
 function scheduleLocalDailyReminder() {
   if (!state.reminderEnabled || !('Notification' in window) || Notification.permission !== 'granted') return;
 
-  // Check every minute if current time matches reminder time
   if (window._reminderInterval) clearInterval(window._reminderInterval);
 
+  // Check every 30 seconds for scheduled times
   window._reminderInterval = setInterval(() => {
-    const now = new Date();
-    const currentHM = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-    const today = getTodayISO();
+    checkAndTriggerScheduledReminders();
+  }, 30000);
 
-    if (currentHM === state.reminderTime && localStorage.getItem('last_reminder_date') !== today) {
-      // Check if user has already spent or logged today
-      const spentToday = getSpentToday();
-      const message = spentToday > 0 
-        ? `You've logged ${formatMoney(spentToday)} today. Any other purchases to record?`
-        : `Take 10 seconds to log today's purchases in Vault.`;
+  checkAndTriggerScheduledReminders();
+}
 
-      sendTestNotification('Daily Spending Reminder', message);
-      localStorage.setItem('last_reminder_date', today);
-    }
-  }, 60000);
+function checkAndTriggerScheduledReminders() {
+  if (!state.reminderEnabled || !('Notification' in window) || Notification.permission !== 'granted') return;
+
+  const now = new Date();
+  const currentHM = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+  const today = getTodayISO();
+
+  const time1 = state.reminderTime || '13:00';
+  const time2 = state.reminderTime2 || '20:30';
+
+  const isMatchingTime = (targetHM) => {
+    if (!targetHM) return false;
+    if (currentHM === targetHM) return true;
+    const [currH, currM] = currentHM.split(':').map(Number);
+    const [targetH, targetM] = targetHM.split(':').map(Number);
+    const diff = (currH * 60 + currM) - (targetH * 60 + targetM);
+    return diff >= 0 && diff <= 1; // within current or immediately next minute
+  };
+
+  const spentToday = getSpentToday();
+
+  // 1st Notification: Midday / Afternoon check
+  if (isMatchingTime(time1) && localStorage.getItem('last_reminder_1_date') !== today) {
+    const message = spentToday > 0 
+      ? `Midday Check: You've logged ${formatMoney(spentToday)} today. Any other morning or lunch purchases to record?`
+      : `Midday Check: Remember to log your morning & lunch purchases in Vault!`;
+
+    sendNotification('Vault Midday Reminder', message, 'vault-daily-reminder-1');
+    localStorage.setItem('last_reminder_1_date', today);
+  }
+
+  // 2nd Notification: Evening review
+  if (isMatchingTime(time2) && localStorage.getItem('last_reminder_2_date') !== today) {
+    const message = spentToday > 0 
+      ? `Evening Review: Total logged today: ${formatMoney(spentToday)}. Tap to add any dinner or late purchases.`
+      : `Evening Review: Did you spend anything today? Take 10 seconds to log your expenses.`;
+
+    sendNotification('Vault Evening Review', message, 'vault-daily-reminder-2');
+    localStorage.setItem('last_reminder_2_date', today);
+  }
 }
 
 function haptic() {
@@ -663,7 +735,7 @@ function renderDailyGroupedList() {
 
 function renderTxRowHTML(tx) {
   const isExp = tx.type === 'expense';
-  const catObj = CATEGORIES.find(c => c.name === tx.category) || { icon: 'layers', color: '#8e8e93' };
+  const catObj = CATEGORIES.find(c => c.name === tx.category || c.id === tx.category) || { icon: 'layers', color: '#8e8e93' };
 
   let mainDisplay = '';
   let subDisplay = '';
@@ -678,19 +750,22 @@ function renderTxRowHTML(tx) {
 
   return `
     <div class="ios-list-row" data-id="${tx.id}">
-      <div class="row-left">
+      <div class="row-left" data-action="edit" data-id="${tx.id}" title="Tap to edit date, category, or amount">
         <div class="row-icon-circle" style="color: ${catObj.color};">
           <i data-lucide="${catObj.icon}"></i>
         </div>
         <div class="row-text">
           <span class="row-title">${escapeHTML(tx.note || tx.category)}</span>
-          <span class="row-meta">${tx.category} • ${tx.paymentMethod || 'Cash'} • <span style="color: var(--ios-text-tertiary);">${subDisplay}</span></span>
+          <span class="row-meta"><strong class="row-cat-badge">${escapeHTML(tx.category)}</strong> • ${escapeHTML(tx.paymentMethod || 'Cash')} • <span style="color: var(--ios-text-tertiary);">${subDisplay}</span></span>
         </div>
       </div>
       <div class="row-right">
         <span class="row-amount ${isExp ? 'expense' : 'income'}">
           ${isExp ? '-' : '+'}${mainDisplay}
         </span>
+        <button class="row-edit-btn" data-action="edit" data-id="${tx.id}" title="Edit Log">
+          <i data-lucide="pencil"></i>
+        </button>
         <button class="row-delete-btn" data-action="delete" data-id="${tx.id}" title="Delete">
           <i data-lucide="trash-2"></i>
         </button>
@@ -883,8 +958,10 @@ function updateCategoryChips() {
   const container = document.getElementById('sheetCategoryPicker');
   if (!container) return;
 
-  container.innerHTML = CATEGORIES.map((cat, idx) => `
-    <button type="button" class="category-chip ${idx === 0 ? 'selected' : ''}" data-cat="${cat.name}">
+  const currentSelected = document.getElementById('sheetSelectedCategory')?.value || CATEGORIES[0].name;
+
+  container.innerHTML = CATEGORIES.map((cat) => `
+    <button type="button" class="category-chip ${cat.name === currentSelected ? 'selected' : ''}" data-cat="${cat.name}">
       <i data-lucide="${cat.icon}"></i>
       <span>${cat.name}</span>
     </button>
@@ -894,15 +971,18 @@ function updateCategoryChips() {
     lucide.createIcons();
   }
 
-  container.addEventListener('click', (e) => {
-    const chip = e.target.closest('.category-chip');
-    if (!chip) return;
-    container.querySelectorAll('.category-chip').forEach(c => c.classList.remove('selected'));
-    chip.classList.add('selected');
-    const input = document.getElementById('sheetSelectedCategory');
-    if (input) input.value = chip.dataset.cat;
-    haptic();
-  });
+  if (!container._hasClickAttached) {
+    container.addEventListener('click', (e) => {
+      const chip = e.target.closest('.category-chip');
+      if (!chip) return;
+      container.querySelectorAll('.category-chip').forEach(c => c.classList.remove('selected'));
+      chip.classList.add('selected');
+      const input = document.getElementById('sheetSelectedCategory');
+      if (input) input.value = chip.dataset.cat;
+      haptic();
+    });
+    container._hasClickAttached = true;
+  }
 }
 
 // ============================================================================
@@ -938,17 +1018,17 @@ function setupEventListeners() {
   });
 
   // Open Log Modal (Bottom Sheet)
-  const openSheet = () => {
-    setSheetTxType('expense');
-    document.getElementById('sheetDate').value = getTodayISO();
-    document.getElementById('txSheetModal')?.classList.add('open');
-    document.getElementById('sheetAmount')?.focus();
-    haptic();
-  };
-
   document.getElementById('btnDesktopAdd')?.addEventListener('click', openSheet);
   document.getElementById('btnMobileAdd')?.addEventListener('click', openSheet);
   document.getElementById('btnCloseSheet')?.addEventListener('click', closeSheet);
+  document.getElementById('btnDeleteFromSheet')?.addEventListener('click', async () => {
+    const id = document.getElementById('sheetEditingTxId')?.value;
+    if (!id) return;
+    if (confirm('Delete this transaction?')) {
+      await deleteTransaction(id);
+      closeSheet();
+    }
+  });
 
   // Close when clicking modal backdrop
   document.querySelectorAll('.ios-modal-backdrop').forEach(modal => {
@@ -1003,33 +1083,7 @@ function setupEventListeners() {
   const sheetAmtInput = document.getElementById('sheetAmount');
   const sheetCurrSym = document.getElementById('sheetCurrSymbol');
   const sheetCurrSuffix = document.getElementById('sheetCurrSuffix');
-  const sheetConversionHint = document.getElementById('sheetConversionHint');
   const sheetCurrInput = document.getElementById('sheetCurrencyInput');
-
-  function updateSheetConversionHint() {
-    const val = parseFloat(sheetAmtInput.value);
-    const isLbp = sheetCurrInput.value === 'LBP_K';
-
-    if (isNaN(val) || val <= 0) {
-      if (sheetConversionHint) {
-        sheetConversionHint.textContent = isLbp ? '100 = 100,000 L.L (89k = $1.00)' : 'Enter amount in USD';
-      }
-      return;
-    }
-
-    if (isLbp) {
-      const usdVal = ((val * 1000) / LBP_RATE).toFixed(2);
-      const fullLBP = (val * 1000).toLocaleString();
-      if (sheetConversionHint) {
-        sheetConversionHint.textContent = `${val}k L.L (${fullLBP} L.L) ≈ $${usdVal} USD`;
-      }
-    } else {
-      const lbpK = ((val * LBP_RATE) / 1000).toFixed(1);
-      if (sheetConversionHint) {
-        sheetConversionHint.textContent = `$${val} ≈ ${lbpK}k L.L (at 89k/$)`;
-      }
-    }
-  }
 
   btnCurrUSD?.addEventListener('click', () => {
     btnCurrUSD.classList.add('active');
@@ -1113,21 +1167,28 @@ function setupEventListeners() {
   });
 
   document.getElementById('btnSendTestNotification')?.addEventListener('click', () => {
-    sendTestNotification('Vault Reminder', 'Notification test successful! You are all set.');
+    sendTestNotification(1);
+  });
+
+  document.getElementById('btnSendTestNotification2')?.addEventListener('click', () => {
+    sendTestNotification(2);
   });
 
   document.getElementById('btnSaveReminderSettings')?.addEventListener('click', async () => {
     const isChecked = document.getElementById('toggleReminder')?.checked;
-    const timeVal = document.getElementById('reminderTimeInput')?.value || '20:30';
+    const timeVal1 = document.getElementById('reminderTimeInput')?.value || '13:00';
+    const timeVal2 = document.getElementById('reminderTime2Input')?.value || '20:30';
 
     if (isChecked && 'Notification' in window && Notification.permission !== 'granted') {
       await requestNotificationPermission();
-    } else {
-      state.reminderEnabled = isChecked;
-      state.reminderTime = timeVal;
-      await saveSettings();
-      checkNotificationStatus();
     }
+    
+    state.reminderEnabled = isChecked;
+    state.reminderTime = timeVal1;
+    state.reminderTime2 = timeVal2;
+    await saveSettings();
+    checkNotificationStatus();
+
     document.getElementById('reminderModal')?.classList.remove('open');
     haptic();
   });
@@ -1150,13 +1211,33 @@ function setupEventListeners() {
     }
   });
 
-  // Delete transaction delegation
+  // Transaction action delegation (Edit & Delete)
   document.addEventListener('click', async (e) => {
     const delBtn = e.target.closest('[data-action="delete"]');
-    if (!delBtn) return;
-    const id = delBtn.dataset.id;
-    if (id) {
-      await deleteTransaction(id);
+    if (delBtn) {
+      e.stopPropagation();
+      const id = delBtn.dataset.id;
+      if (id) {
+        await deleteTransaction(id);
+      }
+      return;
+    }
+
+    const editBtn = e.target.closest('[data-action="edit"]');
+    if (editBtn) {
+      const id = editBtn.dataset.id;
+      if (id) {
+        openEditTx(id);
+      }
+      return;
+    }
+
+    const listRow = e.target.closest('.ios-list-row');
+    if (listRow && !e.target.closest('button')) {
+      const id = listRow.dataset.id;
+      if (id && id.startsWith('tx_')) {
+        openEditTx(id);
+      }
     }
   });
 
@@ -1187,6 +1268,38 @@ async function handleTxSubmit(e) {
   const note = document.getElementById('sheetNote')?.value || category;
   const date = document.getElementById('sheetDate')?.value || getTodayISO();
   const paymentMethod = document.getElementById('sheetPaymentMethod')?.value || 'Cash';
+  const editingId = document.getElementById('sheetEditingTxId')?.value;
+
+  if (editingId) {
+    const existingIdx = state.transactions.findIndex(t => t.id === editingId);
+    if (existingIdx !== -1) {
+      const existing = state.transactions[existingIdx];
+      const updatedRecord = {
+        ...existing,
+        type,
+        amount: amountUSD,
+        inputCurrency: currMode,
+        inputAmount: enteredVal,
+        category,
+        note,
+        date,
+        paymentMethod,
+        updatedAt: new Date().toISOString()
+      };
+
+      // 1. Write update to IndexedDB
+      await idbPut('transactions', updatedRecord);
+
+      // 2. Update memory state
+      state.transactions[existingIdx] = updatedRecord;
+      sortTransactions();
+
+      closeSheet();
+      renderAll();
+      haptic();
+      return;
+    }
+  }
 
   const now = new Date();
   const time = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -1211,6 +1324,7 @@ async function handleTxSubmit(e) {
 
   // 2. Update memory state
   state.transactions.unshift(record);
+  sortTransactions();
 
   closeSheet();
   renderAll();
@@ -1352,24 +1466,164 @@ function setSheetTxType(type) {
   haptic();
 }
 
+function updateSheetConversionHint() {
+  const sheetAmtInput = document.getElementById('sheetAmount');
+  const sheetCurrInput = document.getElementById('sheetCurrencyInput');
+  const sheetConversionHint = document.getElementById('sheetConversionHint');
+  if (!sheetAmtInput || !sheetCurrInput || !sheetConversionHint) return;
+
+  const val = parseFloat(sheetAmtInput.value);
+  const isLbp = sheetCurrInput.value === 'LBP_K';
+
+  if (isNaN(val) || val <= 0) {
+    sheetConversionHint.textContent = isLbp ? '100 = 100,000 L.L (89k = $1.00)' : 'Enter amount in USD';
+    return;
+  }
+
+  if (isLbp) {
+    const usdVal = ((val * 1000) / LBP_RATE).toFixed(2);
+    const fullLBP = (val * 1000).toLocaleString();
+    sheetConversionHint.textContent = `${val}k L.L (${fullLBP} L.L) ≈ $${usdVal} USD`;
+  } else {
+    const lbpK = ((val * LBP_RATE) / 1000).toFixed(1);
+    sheetConversionHint.textContent = `$${val} ≈ ${lbpK}k L.L (at 89k/$)`;
+  }
+}
+
+function openSheet() {
+  const form = document.getElementById('sheetTxForm');
+  if (form) form.reset();
+
+  const idInput = document.getElementById('sheetEditingTxId');
+  const modalTitle = document.getElementById('sheetModalTitle');
+  const modeBadge = document.getElementById('sheetModeBadge');
+  const saveBtn = document.getElementById('btnSaveTransaction');
+  const deleteBtn = document.getElementById('btnDeleteFromSheet');
+
+  if (idInput) idInput.value = '';
+  if (modalTitle) modalTitle.textContent = 'Log Spend';
+  if (modeBadge) modeBadge.style.display = 'none';
+  if (saveBtn) saveBtn.textContent = 'Save';
+  if (deleteBtn) deleteBtn.style.display = 'none';
+
+  setSheetTxType('expense');
+
+  // Reset currency toggle to USD
+  const btnCurrUSD = document.getElementById('btnSheetCurrUSD');
+  const btnCurrLBP = document.getElementById('btnSheetCurrLBP');
+  const sheetCurrSym = document.getElementById('sheetCurrSymbol');
+  const sheetCurrSuffix = document.getElementById('sheetCurrSuffix');
+  const sheetCurrInput = document.getElementById('sheetCurrencyInput');
+
+  btnCurrUSD?.classList.add('active');
+  btnCurrLBP?.classList.remove('active');
+  if (sheetCurrInput) sheetCurrInput.value = 'USD';
+  if (sheetCurrSym) sheetCurrSym.textContent = '$';
+  if (sheetCurrSuffix) sheetCurrSuffix.style.display = 'none';
+
+  selectCategoryChip('Food & Dining');
+  const dateInput = document.getElementById('sheetDate');
+  if (dateInput) dateInput.value = getTodayISO();
+
+  updateSheetConversionHint();
+
+  document.getElementById('txSheetModal')?.classList.add('open');
+  document.getElementById('sheetAmount')?.focus();
+  haptic();
+}
+
+function openEditTx(id) {
+  const tx = state.transactions.find(t => t.id === id);
+  if (!tx) return;
+
+  const idInput = document.getElementById('sheetEditingTxId');
+  const modalTitle = document.getElementById('sheetModalTitle');
+  const modeBadge = document.getElementById('sheetModeBadge');
+  const saveBtn = document.getElementById('btnSaveTransaction');
+  const deleteBtn = document.getElementById('btnDeleteFromSheet');
+  const amtInput = document.getElementById('sheetAmount');
+  const noteInput = document.getElementById('sheetNote');
+  const dateInput = document.getElementById('sheetDate');
+  const paymentSelect = document.getElementById('sheetPaymentMethod');
+
+  if (idInput) idInput.value = tx.id;
+  if (modalTitle) modalTitle.textContent = 'Edit Log';
+  if (modeBadge) modeBadge.style.display = 'inline-block';
+  if (saveBtn) saveBtn.textContent = 'Update Log';
+  if (deleteBtn) deleteBtn.style.display = 'block';
+
+  setSheetTxType(tx.type || 'expense');
+
+  const btnCurrUSD = document.getElementById('btnSheetCurrUSD');
+  const btnCurrLBP = document.getElementById('btnSheetCurrLBP');
+  const sheetCurrSym = document.getElementById('sheetCurrSymbol');
+  const sheetCurrSuffix = document.getElementById('sheetCurrSuffix');
+  const sheetCurrInput = document.getElementById('sheetCurrencyInput');
+
+  if (tx.inputCurrency === 'LBP_K') {
+    btnCurrLBP?.classList.add('active');
+    btnCurrUSD?.classList.remove('active');
+    if (sheetCurrInput) sheetCurrInput.value = 'LBP_K';
+    if (sheetCurrSym) sheetCurrSym.textContent = 'L.L ';
+    if (sheetCurrSuffix) sheetCurrSuffix.style.display = 'inline-block';
+    if (amtInput) amtInput.value = tx.inputAmount != null ? tx.inputAmount : Math.round(((Number(tx.amount) || 0) * LBP_RATE) / 1000);
+  } else {
+    btnCurrUSD?.classList.add('active');
+    btnCurrLBP?.classList.remove('active');
+    if (sheetCurrInput) sheetCurrInput.value = 'USD';
+    if (sheetCurrSym) sheetCurrSym.textContent = '$';
+    if (sheetCurrSuffix) sheetCurrSuffix.style.display = 'none';
+    if (amtInput) amtInput.value = tx.inputAmount != null ? tx.inputAmount : (Number(tx.amount) || 0);
+  }
+
+  updateSheetConversionHint();
+  selectCategoryChip(tx.category || 'Food & Dining');
+
+  if (noteInput) noteInput.value = tx.note || '';
+  if (dateInput) dateInput.value = tx.date || getTodayISO();
+  if (paymentSelect) paymentSelect.value = tx.paymentMethod || 'Cash';
+
+  document.getElementById('txSheetModal')?.classList.add('open');
+  amtInput?.focus();
+  haptic();
+}
+
 function selectCategoryChip(catName) {
   const container = document.getElementById('sheetCategoryPicker');
+  const input = document.getElementById('sheetSelectedCategory');
   if (!container) return;
+
+  let found = false;
   container.querySelectorAll('.category-chip').forEach(c => {
-    if (c.dataset.cat === catName) {
+    const chipCat = c.dataset.cat;
+    if (chipCat === catName || (catName === 'Other' && chipCat === 'Other / Misc') || (catName === 'Other / Misc' && chipCat === 'Other')) {
       c.classList.add('selected');
-      const input = document.getElementById('sheetSelectedCategory');
-      if (input) input.value = catName;
+      found = true;
     } else {
       c.classList.remove('selected');
     }
   });
+
+  if (!found) {
+    const firstChip = container.querySelector('.category-chip');
+    if (firstChip) {
+      firstChip.classList.add('selected');
+      if (input) input.value = firstChip.dataset.cat;
+    }
+  } else {
+    if (input) input.value = catName;
+  }
 }
 
 function closeSheet() {
   document.getElementById('txSheetModal')?.classList.remove('open');
+  const idInput = document.getElementById('sheetEditingTxId');
+  if (idInput) idInput.value = '';
   const form = document.getElementById('sheetTxForm');
   if (form) form.reset();
+  const deleteBtn = document.getElementById('btnDeleteFromSheet');
+  if (deleteBtn) deleteBtn.style.display = 'none';
+  updateSheetConversionHint();
 }
 
 function closeAllModals() {
@@ -1397,7 +1651,10 @@ function exportFullAnalyticsJSON() {
     settings: {
       currency: state.currency,
       baseBalance: state.baseBalance,
-      dailyBudget: state.dailyBudget
+      dailyBudget: state.dailyBudget,
+      reminderEnabled: state.reminderEnabled,
+      reminderTime: state.reminderTime,
+      reminderTime2: state.reminderTime2
     },
     balances: state.adjustments,
     transactions: state.transactions
@@ -1462,6 +1719,9 @@ async function importDataJSON(e) {
           state.currency = data.settings.currency || state.currency;
           state.baseBalance = data.settings.baseBalance || 0;
           state.dailyBudget = data.settings.dailyBudget || 50;
+          if (data.settings.reminderEnabled !== undefined) state.reminderEnabled = !!data.settings.reminderEnabled;
+          if (data.settings.reminderTime) state.reminderTime = data.settings.reminderTime;
+          if (data.settings.reminderTime2) state.reminderTime2 = data.settings.reminderTime2;
           await saveSettings();
         }
         await loadDataFromIndexedDB();
